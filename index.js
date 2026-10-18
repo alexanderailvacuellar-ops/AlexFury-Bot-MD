@@ -1,4 +1,4 @@
-import makeWASocket, { useMultiFileAuthState, DisconnectReason, downloadMediaMessage } from '@whiskeysockets/baileys'
+import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys'
 import { Boom } from '@hapi/boom'
 import pino from 'pino'
 import express from 'express'
@@ -6,10 +6,16 @@ import fs from 'fs'
 
 const app = express()
 const PORT = process.env.PORT || 10000
-const OWNER = ['573227642844', '573227624844'] // tu número
-
-app.get('/', (req,res) => res.send('<h1>AlexFury Bot Activo ✅</h1><p>Sesión activa - 1 de 4</p>'))
+app.get('/', (req,res) => res.send('<h1>AlexFury Bot Sin Disk ✅</h1>'))
 app.listen(PORT, () => console.log('Puerto ' + PORT))
+
+// Cargar sesión desde variable si existe
+if (process.env.SESSION_ID) {
+  if (!fs.existsSync('./auth')) fs.mkdirSync('./auth', { recursive: true })
+  const data = Buffer.from(process.env.SESSION_ID, 'base64').toString()
+  fs.writeFileSync('./auth/creds.json', data)
+  console.log('Sesión restaurada desde SESSION_ID')
+}
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState('./auth')
@@ -17,75 +23,50 @@ async function startBot() {
     auth: state,
     logger: pino({ level: 'silent' }),
     browser: ['AlexFury Bot', 'Chrome', '1.0'],
-    markOnlineOnConnect: true
+    printQRInTerminal: false
   })
 
-  sock.ev.on('creds.update', saveCreds)
+  sock.ev.on('creds.update', async () => {
+    await saveCreds()
+    // Cuando se conecte, genera el código para guardar
+    if (fs.existsSync('./auth/creds.json')) {
+      const creds = fs.readFileSync('./auth/creds.json')
+      const b64 = Buffer.from(creds).toString('base64')
+      console.log('\n\n========== COPIA ESTO EN RENDER ==========')
+      console.log(b64)
+      console.log('========== FIN ==========\n\n')
+      console.log('Pon esto en Environment > SESSION_ID')
+    }
+  })
 
-  sock.ev.on('connection.update', (update) => {
-    const { connection, lastDisconnect } = update
-    if (connection === 'close') {
-      const shouldReconnect = (lastDisconnect?.error instanceof Boom ? lastDisconnect.error.output.statusCode : 0) !== DisconnectReason.loggedOut
-      console.log('Conexión cerrada, reconectando...', shouldReconnect)
-      if (shouldReconnect) startBot()
-    } else if (connection === 'open') {
-      console.log('✅ ALEXFURY BOT CONECTADO AL 100%')
+  // CÓDIGO DE VINCULACIÓN
+  if (!sock.authState.creds.registered) {
+    setTimeout(async () => {
+      let code = await sock.requestPairingCode('573227624844')
+      code = code.match(/.{1,4}/g).join('-')
+      console.log(`\nTU CODIGO ES: ${code}\n`)
+    }, 3000)
+  }
+
+  sock.ev.on('connection.update', (u) => {
+    if(u.connection === 'open') console.log('✅ CONECTADO AL 100% - Sin necesidad de Disk')
+    if(u.connection === 'close') {
+      const should = u.lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
+      if(should) startBot()
     }
   })
 
   sock.ev.on('messages.upsert', async ({ messages }) => {
     const m = messages[0]
-    if (!m.message || m.key.fromMe) return
+    if (!m.message) return
     const from = m.key.remoteJid
-    const body = m.message.conversation || m.message.extendedTextMessage?.text || m.message.imageMessage?.caption || m.message.videoMessage?.caption || ''
-    const prefix = '.'
-    if (!body.startsWith(prefix)) return
-    const args = body.slice(prefix.length).trim().split(/ +/)
-    const command = args.shift().toLowerCase()
-
-    const reply = (text) => sock.sendMessage(from, { text }, { quoted: m })
-
-    if (command === 'menu' || command === 'help') {
-      return reply(
-`╭━〔 *ALEXFURY BOT* 〕━╮
-┃ ✅ Sesión activa
-┃ 
-┃ *COMANDOS*
-┃ • .menu - Este menú
-┃ • .ping - Velocidad
-┃ • .owner - Dueño
-┃ • .sticker / .s - Imagen a sticker
-┃ • .toimg - Sticker a imagen
-┃ • .say [texto] - El bot repite
-╰━━━━━━━━━━━━━━━╯`
-      )
-    }
-    if (command === 'ping') {
-      const start = Date.now()
-      await reply('Pong...')
-      return reply(`*Pong!* ${Date.now() - start}ms`)
-    }
-    if (command === 'owner') {
-      return reply('Mi dueño es AlexFury wa.me/573227642844')
-    }
-    if (command === 'say') {
-      if (!args.length) return reply('Escribe .say hola')
-      return reply(args.join(' '))
-    }
-    if (command === 'sticker' || command === 's') {
-      const quoted = m.message.extendedTextMessage?.contextInfo?.quotedMessage
-      const msg = quoted ? { message: quoted } : m
-      const buffer = await downloadMediaMessage(msg, 'buffer', {}, { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage })
-      if (!buffer) return reply('Responde a una imagen con .s')
-      return sock.sendMessage(from, { sticker: buffer }, { quoted: m })
-    }
-    if (command === 'toimg') {
-      const quoted = m.message.extendedTextMessage?.contextInfo?.quotedMessage?.stickerMessage
-      if (!quoted) return reply('Responde a un sticker con .toimg')
-      const buffer = await downloadMediaMessage({ message: { stickerMessage: quoted } }, 'buffer', {}, { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage })
-      return sock.sendMessage(from, { image: buffer }, { quoted: m })
-    }
+    const body = m.message.conversation || m.message.extendedTextMessage?.text || ''
+    console.log('Msg:', body)
+    if (!body.startsWith('.')) return
+    const cmd = body.slice(1).split(' ')[0].toLowerCase()
+    const reply = (t) => sock.sendMessage(from, { text: t }, { quoted: m })
+    if (cmd === 'menu') reply('✅ AlexFury Bot 100% ACTIVO\n\n.menu\n.ping\n.say hola')
+    if (cmd === 'ping') reply('Pong! Bot sin Disk activo ✅')
   })
 }
-
 startBot()
