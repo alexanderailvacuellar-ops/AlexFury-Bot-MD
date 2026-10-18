@@ -1,5 +1,11 @@
 const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys')
 const P = require('pino')
+const fs = require('fs')
+
+// ESTO BORRA LA SESION DAÑADA AUTOMATICAMENTE
+if (fs.existsSync('./auth')) {
+   try { fs.rmSync('./auth', { recursive: true, force: true }); console.log("Auth vieja borrada") } catch {}
+}
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth')
@@ -10,17 +16,21 @@ async function startBot() {
     })
 
     if (!sock.authState.creds.registered) {
-        const number = "573227624844" // TU NÚMERO DEL BOT
+        const number = "5732134567890" // <--- CAMBIA ESTO POR TU NUMERO REAL DEL BOT
         setTimeout(async () => {
-            let code = await sock.requestPairingCode(number)
-            console.log("TU CODIGO: " + code)
-        }, 3000)
+            try {
+                let code = await sock.requestPairingCode(number)
+                console.log("==================================")
+                console.log(" TU CODIGO ES: " + code)
+                console.log("==================================")
+            } catch {}
+        }, 5000)
     }
 
     sock.ev.on('creds.update', saveCreds)
     sock.ev.on('connection.update', (u) => {
         if (u.connection === 'open') console.log('✅ CONECTADO AL 100%')
-        if (u.connection === 'close') startBot()
+        if (u.connection === 'close') setTimeout(() => startBot(), 3000)
     })
 
     sock.ev.on('messages.upsert', async (m) => {
@@ -28,77 +38,14 @@ async function startBot() {
         if (!msg.message || msg.key.fromMe) return
         const from = msg.key.remoteJid
         const text = msg.message.conversation || msg.message.extendedTextMessage?.text || ""
-        const cmd = text.toLowerCase().split(' ')[0]
+        const cmd = text.trim().split(' ')[0].toLowerCase()
 
         if (cmd === '.menu' || cmd === '.help') {
-            let menu = `🌐 *Menú Principal*
-────────────────────────────
-👤 Usuario: ALEXANDER 🤠
-🔰 Rol: Novato V ⚔️
-📈 Nivel: 0 (27641 XP)
-💎 Gemas: 15
-⏱ Activo: 117:35:16
-
-📊 *Info* 
-╰➤ .owner
-╰➤ .creador
-╰➤ .ping
-╰➤ .bot
-
-⚙ *On/Off*
-╰➤ .enable opción
-╰➤ .disable opción
-
-⬇ *Download*
-╰➤ .play
-╰➤ .tiktok
-╰➤ .ig
-╰➤ .fb
-╰➤ .ytmp3
-╰➤ .ytmp4
-╰➤ .mediafire
-╰➤ .spotify
-
-🔍 *Search*
-╰➤ .pinterest
-╰➤ .yts
-╰➤ .google
-
-💭 *Inteligencias*
-╰➤ .ai
-╰➤ .flux
-
-🎨 *Stickers*
-╰➤ .s / .sticker
-╰➤ .qc <texto>
-╰➤ .brat <texto>
-
-👥 *Grupos*
-╰➤ .add <numero>
-╰➤ .kick @usuario
-╰➤ .promote
-╰➤ .demote
-╰➤ .todos
-╰➤ .grupo abrir/cerrar
-╰➤ .link
-
-💰 *RPG*
-╰➤ .daily
-╰➤ .work
-╰➤ .minar
-╰➤ .bank
-
-_Hecho por AlexFury Bot_ - ✅ ACTIVO`
-
+            let menu = `🌐 *Menú Principal*\n👤 Usuario: ALEXANDER\n\n📊 Info\n├ .owner\n├ .ping\n├ .bot\n\n⬇ Download\n├ .play\n├ .tiktok\n├ .fb\n├ .ytmp3\n├ .ytmp4\n\n🎨 Stickers\n├ .s / .sticker\n\n_Hecho por AlexFury Bot - ACTIVO_`
             await sock.sendMessage(from, { text: menu })
         }
-
-        if (cmd === '.ping') {
-            await sock.sendMessage(from, { text: 'Pong! ✅ 100ms\nBOT FURY ACTIVO' })
-        }
-        if (cmd === '.owner') {
-            await sock.sendMessage(from, { text: '👑 Creador: wa.me/573124354918' })
-        }
+        if (cmd === '.ping') await sock.sendMessage(from, { text: 'Pong! ✅ BOT FURY ACTIVO' })
+        if (cmd === '.owner') await sock.sendMessage(from, { text: 'Creador: wa.me/573124354518' })
     })
 }
 startBot()
