@@ -1,16 +1,21 @@
+const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys')
+const P = require('pino')
+const fs = require('fs')
 
-{
-  "name": "alexfury-bot-md",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.8",
-    "pino": "^8.16.2",
-    "express": "^4.18.2",
-    "yt-search": "^2.10.3",
-    "axios": "^1.6.0",
-    "file-type": "^16.5.4"
-  }
-}
+if (fs.existsSync('./auth')) fs.rmSync('./auth', { recursive: true, force: true })
+
+async function startBot() {
+    const { state, saveCreds } = await useMultiFileAuthState('./auth')
+    const sock = makeWASocket({ logger: P({ level: 'silent' }), auth: state, browser: ["Chrome","Ubuntu","110.0.0.0"] })
+    sock.ev.on('creds.update', saveCreds)
+    sock.ev.on('connection.update', async (u) => {
+        if (u.qr) {
+            console.log("QR LINK: https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(u.qr))
+            console.log("COPIA ESE LINK Y ABRELO EN OTRO CELULAR, TE DARA UN QR PARA ESCANEAR")
+        }
+        if (u.connection === 'open') console.log('✅ CONECTADO')
+        if (u.connection === 'close') setTimeout(startBot, 3000)
+    })
+    sock.ev.on('messages.upsert', async (m) => {
+        const msg = m.messages[0]
+        if (!msg.message) return
