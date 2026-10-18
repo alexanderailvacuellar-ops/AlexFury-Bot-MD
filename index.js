@@ -2,7 +2,7 @@ const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysocket
 const P = require('pino')
 
 async function startBot() {
-    const { state, saveCreds } = await useMultiFileAuthState('./auth')
+    const { state, saveCreds } = await useMultiFileAuthState('./auth2')
     const sock = makeWASocket({ 
         logger: P({ level: 'silent' }), 
         auth: state,
