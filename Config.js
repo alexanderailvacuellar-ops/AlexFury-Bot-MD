@@ -1,5 +1,5 @@
-global.owner = ['573124354918']
-global.botNumber = '573125771676'
+global.owner = ['573227624844']
+global.botNumber = '573227624844'
 global.botname = 'ALEXFURY BOT'
 global.packname = 'Alexfury'
 global.author = 'by Alexfury'
