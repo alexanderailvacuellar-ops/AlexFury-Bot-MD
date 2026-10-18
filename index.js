@@ -16,7 +16,7 @@ async function startBot() {
     })
 
     if (!sock.authState.creds.registered) {
-        const number = "5732134567890" // <--- CAMBIA ESTO POR TU NUMERO REAL DEL BOT
+        const number = "573227624844" // <--- CAMBIA ESTO POR TU NUMERO REAL DEL BOT
         setTimeout(async () => {
             try {
                 let code = await sock.requestPairingCode(number)
