@@ -1,3 +1,5 @@
+import fs from 'fs'
+fs.rmSync('./auth', { recursive: true, force: true })
 import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys'
 import P from 'pino'
 import express from 'express'
@@ -10,7 +12,7 @@ const { state, saveCreds } = await useMultiFileAuthState('./auth')
 const sock = makeWASocket({ auth: state, logger: P({ level: 'silent' }), browser: ['AlexFury', 'Chrome', '1.0.0'] })
 sock.ev.on('creds.update', saveCreds)
 if (!sock.authState.creds.registered) {
-const num = '573125771676'
+const num = '573227624844'
 setTimeout(async () => {
 const code = await sock.requestPairingCode(num)
 console.log('TU CODIGO ES:', code)
