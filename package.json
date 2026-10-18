@@ -1,21 +1,9 @@
-const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys')
-const P = require('pino')
-const fs = require('fs')
-
-if (fs.existsSync('./auth')) fs.rmSync('./auth', { recursive: true, force: true })
-
-async function startBot() {
-    const { state, saveCreds } = await useMultiFileAuthState('./auth')
-    const sock = makeWASocket({ logger: P({ level: 'silent' }), auth: state, browser: ["Chrome","Ubuntu","110.0.0.0"] })
-    sock.ev.on('creds.update', saveCreds)
-    sock.ev.on('connection.update', async (u) => {
-        if (u.qr) {
-            console.log("QR LINK: https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(u.qr))
-            console.log("COPIA ESE LINK Y ABRELO EN OTRO CELULAR, TE DARA UN QR PARA ESCANEAR")
-        }
-        if (u.connection === 'open') console.log('✅ CONECTADO')
-        if (u.connection === 'close') setTimeout(startBot, 3000)
-    })
-    sock.ev.on('messages.upsert', async (m) => {
-        const msg = m.messages[0]
-        if (!msg.message) return
+{
+  "name": "bot",
+  "main": "index.js",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.8",
+    "express": "^4.18.2",
+    "pino": "^8.16.0"
+  }
+}
