@@ -1,5 +1,6 @@
 import fs from 'fs'
-fs.rmSync('./auth', { recursive: true, force: true })
+import fs from 'fs'
+import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys'
 import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys'
 import P from 'pino'
 import express from 'express'
