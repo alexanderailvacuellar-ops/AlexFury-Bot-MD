@@ -4,7 +4,7 @@
   "scripts": { "start": "node index.js" },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.8",
-    "@hapi/boom": 2",
+    "@hapi/boom": 2"
     "qrcode": "^1.5.3"
   }
 }
